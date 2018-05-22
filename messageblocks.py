@@ -61,6 +61,7 @@ class Block:
         self.time = json['time']
         self.hash = json['hash']
         self.signature = json['signature']
+        self.is_closing = False
 
     def update_json(self):
         if self.time is not None:
@@ -119,26 +120,27 @@ class Block:
             i = 0
             block.update_json()
             block.time = json.loads(block.json)['time']  # need time to be constant (not changing every update)
-            print(block.json)
             block.hash = hashlib.sha512(block.json.encode('utf-8')).hexdigest()
-            print(block.hash)
-            print(block.json)
             needed = block.hash[:3]
             sk = SigningKey.generate(curve=NIST521p)
             h = hashlib.sha512(sk.to_string().hex().encode('utf-8')).hexdigest()
-            while needed not in h:
+            while needed not in h and block.is_closing:
                 sk = SigningKey.generate(curve=NIST521p)
                 h = hashlib.sha512(sk.to_string().hex().encode('utf-8')).hexdigest()
                 if keys.key_was_used(sk.to_string().hex()):
                     h = ""
                 i += 1
-            block.private = sk.to_string().hex()
-            block.public = sk.get_verifying_key().to_string().hex()
-            block.update_json()
-            block.signature = sk.sign(block.json.encode('utf-8')).hex()
-            keys.add_key(block, sk.to_string().hex())
-            print("Block", block.id, "closed. Attempts:", i)
+            if block.is_closing:
+                block.private = sk.to_string().hex()
+                block.public = sk.get_verifying_key().to_string().hex()
+                block.update_json()
+                block.signature = sk.sign(block.json.encode('utf-8')).hex()
+                keys.add_key(block, sk.to_string().hex())
+                print("Block", block.id, "closed. Attempts:", i)
+            else:
+                print("Block", block.id, "was not closed. Process stopped.")
 
+        self.is_closing = True
         generate_signature(self)
         self.update_json()
 

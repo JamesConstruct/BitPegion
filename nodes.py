@@ -2,7 +2,8 @@ from flask import Flask, request
 import configparser
 import json
 import requests
-from urllib.parse import urlparse
+from urllib.parse import
+import urllib
 
 # load configuration
 config = configparser.ConfigParser()
@@ -68,6 +69,13 @@ class Nodes:
                 except:
                     print("Node on address", node, "haven't responded correctly.")
             i += 1
+
+    def spread_block(self, block):
+        for node in self.nodes:
+            try:
+                response = urllib.requests.urlopen(f"http://{node}/new_block", ...)
+            except:
+                pass
 
 
 @app.route('/nodes/register', methods=['POST'])
